@@ -32,4 +32,13 @@ public class PublisherApiTest {
                 .andExpect(jsonPath("$._embedded.publishers").exists());
 
     }
+
+    @Test
+    void shouldReturnPublisherListByCity() throws Exception {
+        mockMvc.perform(get("/publishers/search/city?city=Boston"))
+                .andDo(print())
+                .andExpect(content().contentType("application/hal+json"))
+                .andExpect((jsonPath("$._embedded.publishers").exists()))
+                .andExpect(jsonPath("$._embedded.publishers[0].city").value("Boston"));
+    }
 }

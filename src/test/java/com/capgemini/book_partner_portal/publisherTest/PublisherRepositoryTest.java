@@ -20,6 +20,17 @@ public class PublisherRepositoryTest {
     @Autowired
     private PublisherRepository publisherRepository;
 
+
+
+    @Test
+    void shouldReturnAllPublishers() {
+
+        List<Publisher> publishers = publisherRepository.findAll();
+
+        Assertions.assertNotNull(publishers);
+        Assertions.assertEquals(8, publishers.size());
+    }
+
     @Test
     void shouldReturnPublisherById() {
 
@@ -32,11 +43,23 @@ public class PublisherRepositoryTest {
     }
 
     @Test
-    void shouldReturnAllPublishers() {
+    void shouldReturnEmptyWhenIdDoesNotExist() {
 
-        List<Publisher> publishers = publisherRepository.findAll();
+        String id = "9998";
 
-        Assertions.assertNotNull(publishers);
-        Assertions.assertEquals(8, publishers.size());
+        Optional<Publisher> optionalPublisher = publisherRepository.findById(id);
+
+        Assertions.assertTrue(optionalPublisher.isEmpty());
     }
+
+    @Test
+    void shouldReturnEmptyWhenIdIsInvalid() {
+        String id = "1";
+
+        Optional<Publisher> optionalPublisher = publisherRepository.findById(id);
+
+        Assertions.assertTrue(optionalPublisher.isEmpty());
+    }
+
+
 }
