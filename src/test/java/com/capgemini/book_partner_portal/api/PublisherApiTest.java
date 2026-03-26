@@ -72,6 +72,25 @@ public class PublisherApiTest {
                 .andDo(print());
     }
 
+    // searching by city
+    @Test
+    void shouldReturnPublisherListByPubName() throws Exception {
+        mockMvc.perform(get("/api/publishers/search/pubname").param("pubName", testPublisher.getPubName()))
+                .andDo(print())
+                .andExpect(content().contentType("application/hal+json"))
+                .andExpect((jsonPath("$._embedded.publishers").exists()))
+                .andExpect(jsonPath("$._embedded.publishers[0].pubName").value(testPublisher.getPubName()));
+    }
+
+    // city does not exists
+    @Test
+    void shouldReturnPublisherListByPubNameEmpty() throws Exception {
+        mockMvc.perform(get("/api/publishers/search/pubname").param("pubName", "pune"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/hal+json"))
+                .andExpect(jsonPath("$._embedded.publishers").isEmpty());
+    }
 
     // searching by city
     @Test
@@ -86,7 +105,7 @@ public class PublisherApiTest {
     // city does not exists
     @Test
     void shouldReturnPublisherListByCityEmpty() throws Exception {
-        mockMvc.perform(get("/api/publishers/search/city?").param("city", "pune"))
+        mockMvc.perform(get("/api/publishers/search/city").param("city", "pune"))
                 .andDo(print())
                 .andExpect(status().isOk())
                 .andExpect(content().contentType("application/hal+json"))
@@ -132,4 +151,6 @@ public class PublisherApiTest {
                 .andExpect(content().contentType("application/hal+json"))
                 .andExpect(jsonPath("$._embedded.publishers").isEmpty());
     }
+
+    // TODO: create add/save apis tomorrows task
 }

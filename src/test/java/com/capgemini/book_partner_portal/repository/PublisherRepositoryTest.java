@@ -2,7 +2,7 @@ package com.capgemini.book_partner_portal.repository;
 
 import com.capgemini.book_partner_portal.entity.Publisher;
 import jakarta.transaction.Transactional;
-import org.assertj.core.api.Assert;
+import jakarta.validation.ConstraintViolationException;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -10,9 +10,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
-import javax.swing.text.html.Option;
-
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 
 import java.util.List;
 import java.util.Optional;
@@ -195,25 +194,77 @@ public class PublisherRepositoryTest {
         Assertions.assertEquals(publisher.getPubId(), optionalPublisher.get().getPubId());
     }
 
+    // save duplicate id but count doesnt increased
     @Test
     void shouldNotCreateDuplicateWhenIdIsSame() {
+
+        // first save before each
+        long countAfterFirstSave = publisherRepository.count();
+
+        // Second save with same ID
+        publisherRepository.save(testPublisher);
+        long countAfterSecondSave = publisherRepository.count();
+
+        // Assertions
+        Assertions.assertEquals(countAfterFirstSave, countAfterSecondSave, "Count should not increase for duplicate ID");
+    }
+
+
+    // update the existing record
+    @Test
+    void shouldUpdateExistingRecord() {
+
+        // we have inserted test record in before each now updating that record
+
+        testPublisher.setPubName("random_name");
+
+        publisherRepository.save(testPublisher);
+
+        // find by id in database
+        Optional<Publisher> optionalPublisher = publisherRepository.findById(testPublisher.getPubId());
+
+        // Assertions
+        Assertions.assertTrue(optionalPublisher.isPresent());
+        Assertions.assertEquals(testPublisher.getPubName(), optionalPublisher.get().getPubName());
+    }
+
+    // saving publisher with constraint voiletion
+    @Test
+    void shouldThrowErrorWhileSavingPublisher() {
         Publisher publisher = Publisher.builder()
-                .pubId("9921")
+                .pubId("0000")
                 .city("nagpur")
                 .pubName("john")
                 .state("MH")
                 .country("India")
                 .build();
 
-        // First save
-        publisherRepository.save(publisher);
-        long countAfterFirstSave = publisherRepository.count();
 
-        // Second save with same ID
-        publisherRepository.save(publisher);
-        long countAfterSecondSave = publisherRepository.count();
-
-        // Assertions
-        Assertions.assertEquals(countAfterFirstSave, countAfterSecondSave, "Count should not increase for duplicate ID");
+        // We use saveAndFlush to force Hibernate to validate the entity NOW
+        assertThrows(ConstraintViolationException.class, () -> {
+            publisherRepository.saveAndFlush(publisher);
+        });
     }
+
+
+
+    @Test
+    void shouldThrowErrorWhileSavingPublisherStateConstraintVoileted() {
+        // ID "0000" does not match the regex ^(1389|0736|0877|1622|1756|99\d{2})$
+        Publisher publisher = Publisher.builder()
+                .pubId("9993")
+                .pubName("John Doe")
+                .city("Nagpur")
+                .state("MHZ")
+                .country("India")
+                .build();
+
+        // We use saveAndFlush to force Hibernate to validate the entity NOW
+        assertThrows(ConstraintViolationException.class, () -> {
+            publisherRepository.saveAndFlush(publisher);
+        });
+    }
+
+
+
 }

@@ -2,7 +2,9 @@ package com.capgemini.book_partner_portal.entity;
 
 import com.fasterxml.jackson.annotation.JsonPropertyOrder;
 import jakarta.persistence.*;
+import jakarta.validation.constraints.NotBlank;
 import jakarta.validation.constraints.Pattern;
+import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -25,6 +27,7 @@ public class Publisher {
             message = "Invalid pub_id format")
     private String pubId;
 
+    @NotBlank(message = "publisher name cannot be empty")
     @Column(name = "pub_name", length = 40)
     private String pubName;
 
@@ -32,6 +35,7 @@ public class Publisher {
     private String city;
 
     @Column(name = "state", length = 2)
+    @Size(min = 2, max = 2, message = "state code must be 2 characters")
     private String state;
 
     @Column(name = "country", length = 30)
