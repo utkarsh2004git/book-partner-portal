@@ -1,4 +1,4 @@
-package com.capgemini.book_partner_portal.authorTest;
+package com.capgemini.book_partner_portal.repository;
 
 import java.util.List;
 
@@ -9,7 +9,6 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.capgemini.book_partner_portal.entity.Author;
-import com.capgemini.book_partner_portal.repository.AuthorRepository;
 
 import jakarta.transaction.Transactional;
 
