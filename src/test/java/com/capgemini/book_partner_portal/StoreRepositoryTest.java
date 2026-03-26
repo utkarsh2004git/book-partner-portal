@@ -20,22 +20,24 @@ public class StoreRepositoryTest {
 
     @Test
     public void testFindAll_ShouldReturnStoreList() {
-        // Step 1: Call the Repository method
         List<Store> stores = storeRepository.findAll();
 
-        // Step 2: Use assertFalse to ensure the list is NOT empty
-        assertFalse(stores.isEmpty(), "The store list should not be empty");
+        //assertFalse to ensure the list is NOT empty
+        assertFalse(stores.isEmpty());
 
-        // Step 3: Use assertEquals to check the expected count (6 stores in insertdata.sql)
-        assertEquals(6, stores.size(), "Total store count should match the inserted data");
+        //assertEquals used to check the expected count (6 stores in insertdata.sql)
+        assertEquals(6, stores.size());
+    }
 
-        // Step 4: Print all details EXCEPT the ID
-        System.out.println("--- Store Master List (Page 2) ---");
-        stores.forEach(store -> System.out.println(
-                "Name: " + store.getStorName() +
-                        " | Address: " + store.getStorAddress() +
-                        " | City: " + store.getCity() +
-                        " | State: " + store.getState()
-        ));
+    @Test
+    public void testFindByCity_ShouldReturnSpecificStoreData() {
+        String city = "Seattle";
+        List<Store> results = storeRepository.findByCity(city);
+
+        assertFalse(results.isEmpty());
+        assertEquals(1, results.size());
+
+        assertEquals("Eric the Read Books", results.get(0).getStorName());
+        assertEquals("788 Catamaugus Ave.", results.get(0).getStorAddress());
     }
 }
