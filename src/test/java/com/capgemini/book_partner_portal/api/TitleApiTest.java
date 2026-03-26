@@ -48,7 +48,7 @@ class TitleApiTest {
     @Test
     void testFetchMasterBookList() throws Exception {
         
-        mockMvc.perform(get("/titles"))
+        mockMvc.perform(get("/api/titles"))
         .andDo(print())
         
         .andExpect(status().isOk())
@@ -57,7 +57,7 @@ class TitleApiTest {
 
     @Test
     void testFindByTitle() throws Exception{
-        mockMvc.perform(get("/titles/search/findByTitle")
+        mockMvc.perform(get("/api/titles/search/findByTitle")
                 .param("title", "The Busy Executive's Database Guide") 
                 .accept("application/hal+json")) 
                 .andDo(print()) 
@@ -70,7 +70,7 @@ class TitleApiTest {
 
     @Test
     void testFindByType() throws Exception{ 
-        mockMvc.perform(get("/titles/search/findByType")
+        mockMvc.perform(get("/api/titles/search/findByType")
                 .param("type", "business") 
                 .accept("application/hal+json")) 
                 .andDo(print()) 
