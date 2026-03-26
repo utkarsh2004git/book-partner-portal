@@ -3,6 +3,7 @@ package com.capgemini.book_partner_portal.repository;
 
 import com.capgemini.book_partner_portal.entity.Title;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,7 +17,7 @@ public interface TitleRepository extends JpaRepository<Title, String> {
         
         Optional<Title> findByTitle(@RequestParam("title")String title);
 
-        Optional<Title> findByType(@RequestParam("type")String type);
+        List<Title> findByType(@RequestParam("type")String type);
 
   
 }

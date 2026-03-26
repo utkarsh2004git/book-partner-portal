@@ -10,7 +10,7 @@ import org.springframework.test.context.ContextConfiguration;
 
 import com.capgemini.book_partner_portal.BookPartnerPortalApplication;
 import com.capgemini.book_partner_portal.entity.Title;
-import com.capgemini.book_partner_portal.repository.TitleRepository;
+
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -53,9 +53,11 @@ class TitleRepositoryTest {
 
     @Test
     void testFindByType(){
-        Optional<Title> list = titleRepository.findByType("business");
+        List<Title> list = titleRepository.findByType("business");
         assertThat(list).isNotEmpty();
-    }
+    }   
+
+    
     
 
 
