@@ -1,4 +1,4 @@
-package com.capgemini.book_partner_portal.authorTest;
+package com.capgemini.book_partner_portal.api;
 
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
