@@ -55,7 +55,7 @@ public class PublisherApiTest {
     // success when name of publisher is there
     @Test
     void shouldReturnPublisherByName() throws Exception {
-        mockMvc.perform(get("/api/publishers/search/pubname") // Added /search/
+        mockMvc.perform(get("/api/publishers/search/exact-pubname") // Added /search/
                         .param("pubName", testPublisher.getPubName()))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -67,11 +67,10 @@ public class PublisherApiTest {
     // not found because the name not present in publisher
     @Test
     void shouldReturnNotFoundByName() throws Exception {
-        mockMvc.perform(get("/api/publishers/search/pubname").param("pubName", "random"))
+        mockMvc.perform(get("/api/publishers/search/exact-pubname").param("pubName", "random"))
                 .andExpect(status().isNotFound())
                 .andDo(print());
     }
-
 
 
     // searching by city
@@ -94,7 +93,7 @@ public class PublisherApiTest {
                 .andExpect(jsonPath("$._embedded.publishers").isEmpty());
     }
 
-    // searching by city
+    // searching by State
     @Test
     void shouldReturnPublisherListByState() throws Exception {
         mockMvc.perform(get("/api/publishers/search/state").param("state", testPublisher.getState()))
@@ -104,7 +103,7 @@ public class PublisherApiTest {
                 .andExpect(jsonPath("$._embedded.publishers[0].state").value(testPublisher.getState()));
     }
 
-    // city does not exists
+    // state does not exists
     @Test
     void shouldReturnPublisherListByStateEmpty() throws Exception {
         mockMvc.perform(get("/api/publishers/search/state").param("state", "VJ"))
@@ -114,5 +113,23 @@ public class PublisherApiTest {
                 .andExpect(jsonPath("$._embedded.publishers").isEmpty());
     }
 
+    // searching by country
+    @Test
+    void shouldReturnPublisherListByCountry() throws Exception {
+        mockMvc.perform(get("/api/publishers/search/country").param("country", testPublisher.getCountry()))
+                .andDo(print())
+                .andExpect(content().contentType("application/hal+json"))
+                .andExpect((jsonPath("$._embedded.publishers").exists()))
+                .andExpect(jsonPath("$._embedded.publishers[0].country").value(testPublisher.getCountry()));
+    }
 
+    // state does not exists
+    @Test
+    void shouldReturnEmptyPublisherListByCountry() throws Exception {
+        mockMvc.perform(get("/api/publishers/search/country").param("country", "random"))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(content().contentType("application/hal+json"))
+                .andExpect(jsonPath("$._embedded.publishers").isEmpty());
+    }
 }

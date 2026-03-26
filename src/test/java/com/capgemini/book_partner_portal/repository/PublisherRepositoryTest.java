@@ -2,12 +2,16 @@ package com.capgemini.book_partner_portal.repository;
 
 import com.capgemini.book_partner_portal.entity.Publisher;
 import jakarta.transaction.Transactional;
+import org.assertj.core.api.Assert;
 import org.junit.jupiter.api.Assertions;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+
+import javax.swing.text.html.Option;
+
 import static org.assertj.core.api.Assertions.assertThat;
 
 import java.util.List;
@@ -58,17 +62,6 @@ public class PublisherRepositoryTest {
     }
 
     @Test
-    void shouldReturnPublisherByName() {
-        String pubName = testPublisher.getPubName();
-
-        Optional<Publisher> optionalPublisher = publisherRepository.findByPubNameIgnoreCase(pubName);
-
-        Assertions.assertTrue(optionalPublisher.isPresent());
-        Assertions.assertEquals(testPublisher.getPubName(), optionalPublisher.get().getPubName());
-    }
-
-
-    @Test
     void shouldReturnEmptyWhenIdDoesNotExist() {
 
         String id = "9998";
@@ -79,19 +72,63 @@ public class PublisherRepositoryTest {
     }
 
     @Test
-    void shouldReturnPublisherListByCity() {
-        String city = testPublisher.getCity();
+    void shouldReturnPublisherByName() {
+        String pubName = testPublisher.getPubName();
 
-        List<Publisher> publishers = publisherRepository.findByCityIgnoreCase(city);
-        assertThat(publishers).isNotEmpty();
-        Assertions.assertEquals(testPublisher.getCity(), publishers.get(0).getCity());
+        Optional<Publisher> optionalPublisher = publisherRepository.findByPubName(pubName);
+
+        Assertions.assertTrue(optionalPublisher.isPresent());
+        Assertions.assertEquals(testPublisher.getPubName(), optionalPublisher.get().getPubName());
     }
 
     @Test
-    void shouldReturnPublisherListByCityNotFound() {
+    void shouldReturnNotFoundWhenPublisherNameDoesNotExists() {
+        String pubName = "random";
+
+        Optional<Publisher> optionalPublisher = publisherRepository.findByPubName(pubName);
+
+        Assertions.assertFalse(optionalPublisher.isPresent());
+    }
+
+    @Test
+    void shouldReturnPublisherListByName() {
+        String pubName = testPublisher.getPubName().substring(0, testPublisher.getPubName().length() - 2);
+
+        List<Publisher> publishers = publisherRepository.findByPubNameContainingIgnoreCase(pubName.substring(0, pubName.length() - 2));
+        assertThat(publishers).isNotEmpty();
+        for (Publisher publisher : publishers) {
+            Assertions.assertTrue(publisher.getPubName().contains(pubName));
+        }
+    }
+
+
+    @Test
+    void shouldReturnEmptyPublisherListByName() {
+        String pubName = "random";
+
+        List<Publisher> publishers = publisherRepository.findByPubNameContainingIgnoreCase(pubName.toLowerCase());
+
+        Assertions.assertEquals(0, publishers.size());
+    }
+
+
+    @Test
+    void shouldReturnPublisherListByCity() {
+        String city = testPublisher.getCity();
+
+        List<Publisher> publishers = publisherRepository.findByCityContainingIgnoreCase(city);
+        assertThat(publishers).isNotEmpty();
+        for (Publisher publisher : publishers) {
+            Assertions.assertTrue(publisher.getCity().contains(city));
+        }
+    }
+
+
+    @Test
+    void shouldReturnEmptyPublisherListByCity() {
         String city = "random";
 
-        List<Publisher> publishers = publisherRepository.findByCityIgnoreCase(city.toLowerCase());
+        List<Publisher> publishers = publisherRepository.findByCityContainingIgnoreCase(city.toLowerCase());
 
         Assertions.assertEquals(0, publishers.size());
     }
@@ -101,19 +138,82 @@ public class PublisherRepositoryTest {
     void shouldReturnPublisherListByState() {
         String state = testPublisher.getState();
 
-        List<Publisher> publishers = publisherRepository.findByStateIgnoreCase(state.toLowerCase());
+        List<Publisher> publishers = publisherRepository.findByStateContainingIgnoreCase(state.toLowerCase());
         assertThat(publishers).isNotEmpty();
-        Assertions.assertEquals(testPublisher.getState(), publishers.get(0).getState());
+        for (Publisher publisher : publishers) {
+            Assertions.assertTrue(publisher.getState().contains(state));
+        }
     }
 
     @Test
-    void shouldReturnPublisherListByStateNotFound() {
+    void shouldReturnEmptyPublisherListByState() {
         String state = "random";
 
-        List<Publisher> publishers = publisherRepository.findByCityIgnoreCase(state);
+        List<Publisher> publishers = publisherRepository.findByStateContainingIgnoreCase(state);
 
         Assertions.assertEquals(0, publishers.size());
     }
 
+    @Test
+    void shouldReturnPublisherListByCountry() {
+        String country = testPublisher.getCountry();
 
+        List<Publisher> publishers = publisherRepository.findByCountryContainingIgnoreCase(country.toLowerCase());
+        Assertions.assertNotNull(publishers);
+        Assertions.assertFalse(publishers.isEmpty());
+        for (Publisher publisher : publishers) {
+            Assertions.assertTrue(publisher.getCountry().contains(country));
+        }
+    }
+
+    @Test
+    void shouldReturnEmptyPublisherListByCountry() {
+        String country = "random";
+
+        List<Publisher> publishers = publisherRepository.findByCountryContainingIgnoreCase(country);
+        Assertions.assertNotNull(publishers);
+        Assertions.assertEquals(0, publishers.size());
+    }
+
+    // save
+    @Test
+    void shouldSavePublisher() {
+
+        Publisher publisher = Publisher.builder()
+                .pubId("9921")
+                .city("nagpur")
+                .pubName("john")
+                .state("MH")
+                .country("India")
+                .build();
+
+        publisherRepository.save(publisher);
+
+        Optional<Publisher> optionalPublisher = publisherRepository.findById(publisher.getPubId());
+
+        Assertions.assertTrue(optionalPublisher.isPresent());
+        Assertions.assertEquals(publisher.getPubId(), optionalPublisher.get().getPubId());
+    }
+
+    @Test
+    void shouldNotCreateDuplicateWhenIdIsSame() {
+        Publisher publisher = Publisher.builder()
+                .pubId("9921")
+                .city("nagpur")
+                .pubName("john")
+                .state("MH")
+                .country("India")
+                .build();
+
+        // First save
+        publisherRepository.save(publisher);
+        long countAfterFirstSave = publisherRepository.count();
+
+        // Second save with same ID
+        publisherRepository.save(publisher);
+        long countAfterSecondSave = publisherRepository.count();
+
+        // Assertions
+        Assertions.assertEquals(countAfterFirstSave, countAfterSecondSave, "Count should not increase for duplicate ID");
+    }
 }

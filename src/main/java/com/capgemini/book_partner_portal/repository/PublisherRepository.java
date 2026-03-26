@@ -15,11 +15,17 @@ import java.util.Optional;
 public interface PublisherRepository extends JpaRepository<Publisher, String> {
 
     @RestResource(path = "city", rel = "city-search")
-    List<Publisher> findByCityIgnoreCase(@Param("city") String city);
+    List<Publisher> findByCityContainingIgnoreCase(@Param("city") String city);
+
+    @RestResource(path = "exact-pubname", rel = "exact-name-search")
+    Optional<Publisher> findByPubName(@Param("pubName") String pubName);
 
     @RestResource(path = "pubname", rel = "name-search")
-    Optional<Publisher> findByPubNameIgnoreCase(@Param("pubName") String pubName);
+    List<Publisher> findByPubNameContainingIgnoreCase(@Param("pubName") String pubName);
 
     @RestResource(path = "state", rel = "state-search")
-    List<Publisher> findByStateIgnoreCase(@Param("state") String state);
+    List<Publisher> findByStateContainingIgnoreCase(@Param("state") String state);
+
+    @RestResource(path = "country", rel = "country-search")
+    List<Publisher> findByCountryContainingIgnoreCase(@Param("country") String country);
 }
