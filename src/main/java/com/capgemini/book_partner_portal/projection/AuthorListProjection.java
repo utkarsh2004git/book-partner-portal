@@ -7,9 +7,9 @@ import com.capgemini.book_partner_portal.entity.Author;
 @Projection(name = "authorList", types = {Author.class})
 public interface AuthorListProjection {
 
-    String getAuId();
     String getFirstName();
     String getLastName();
     String getCity();
+    String getState();
 
 }
