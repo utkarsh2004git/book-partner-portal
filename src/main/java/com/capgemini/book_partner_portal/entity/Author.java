@@ -1,5 +1,8 @@
 package com.capgemini.book_partner_portal.entity;
 
+import org.hibernate.annotations.SQLDelete;
+import org.hibernate.annotations.SQLRestriction;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
@@ -23,6 +26,10 @@ import lombok.ToString;
 @ToString
 @Builder
 @AllArgsConstructor
+// 1. Hijack the DELETE command and turn it into an UPDATE
+@SQLDelete(sql = "UPDATE authors SET is_active = false WHERE au_id = ?")
+// 2. Secretly append "WHERE is_active = true" to every single SELECT query
+@SQLRestriction("is_active = true")
 public class Author {
 
     @Id

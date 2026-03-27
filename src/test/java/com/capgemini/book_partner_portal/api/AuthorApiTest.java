@@ -1,5 +1,7 @@
 package com.capgemini.book_partner_portal.api;
 
+import java.util.Map;
+
 import static org.hamcrest.Matchers.containsStringIgnoringCase;
 import static org.hamcrest.Matchers.everyItem;
 import org.junit.jupiter.api.BeforeEach;
@@ -7,9 +9,13 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -307,4 +313,104 @@ public class AuthorApiTest {
                 .andDo(print())
                 .andExpect(status().isConflict());
     }
+
+    // ---------------------------------- PUT APIs ----------------------------------------------
+    
+    @Test
+    void updateAuthor_WithValidData_ShouldReturn200() throws Exception {
+        
+        Author updatedAuthor = Author.builder()
+        .auId(testAuthor.getAuId()) 
+        .firstName("UpdatedFirst")
+        .lastName("UpdatedLast")
+        .contract(1) 
+        .phone("415-658-9932")
+        .address("6223 Bateman St.")
+        .city("Berkeley")
+        .state("CA")
+        .zip("94705")
+        .build();
+
+        mockMvc.perform(put("/api/authors/{id}", testAuthor.getAuId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updatedAuthor)))
+                .andDo(print())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.firstName").value("UpdatedFirst"))
+                .andExpect(jsonPath("$.lastName").value("UpdatedLast"));
+            }
+            
+            
+            
+    // ---------------------------------- PATCH APIs ----------------------------------------------
+
+    // path Author with valid id and fields
+    @Test
+    void patchAuthor_WithValidFields_ShouldReturn200() throws Exception {
+        Map<String, Object> updates = Map.of(
+            "firstName", "UpdatedFirst",
+            "lastName", "UpdatedLast"
+        );
+
+        mockMvc.perform(patch("/api/authors/{id}", testAuthor.getAuId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updates)))
+            .andDo(print())
+            .andExpect(status().isOk())
+            .andExpect(jsonPath("$.firstName").value("UpdatedFirst"))
+            .andExpect(jsonPath("$.lastName").value("UpdatedLast"));
+    }
+
+    // path Author with invalid fields
+    @Test
+    void patchAuthor_WithInvalidFields_ShouldReturn400() throws Exception {
+        Map<String, Object> updates = Map.of(
+            "zip", "asdasda"
+        );
+
+        mockMvc.perform(patch("/api/authors/{id}", testAuthor.getAuId())
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updates)))
+            .andDo(print())
+            .andExpect(status().isBadRequest());
+    }
+
+
+    // patch author with invalid Id       
+    @Test
+    void patchAuthor_WithInvalidId_ShouldReturn404() throws Exception {
+        Map<String, Object> updates = Map.of(
+            "firstName", "Alice",
+            "lastName", "Smith"
+        );
+
+        mockMvc.perform(patch("/api/authors/{id}", "999-99-9999")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(updates)))
+            .andDo(print())
+            .andExpect(status().isNotFound());
+    }
+
+
+    // ---------------------------------- DELETE APIs ----------------------------------------------
+
+    @Test
+    void deleteAuthor_WithValidId_ShouldReturn204_AndNotBeAccessible() throws Exception {
+
+        // Step 1: Call DELETE API
+        mockMvc.perform(delete("/api/authors/{id}", testAuthor.getAuId()))
+                .andDo(print())
+                .andExpect(status().isNoContent());
+
+        // Step 2: Try fetching → should return 404 (because of @SQLRestriction)
+        mockMvc.perform(get("/api/authors/{id}", testAuthor.getAuId()))
+                .andDo(print())
+                .andExpect(status().isNotFound());
+    }
+
+
+
+    
+
+    
 }
