@@ -362,4 +362,18 @@ public class PublisherRepositoryTest {
         Assertions.assertEquals(count + 3, result.getTotalElements(), "Total count in DB should be count + 3");
         Assertions.assertTrue(result.hasNext(), "There should be a next page since total is 3 and size is 2");
     }
+
+    // for delete
+
+    @Test
+    void shouldDeletePublisherById() {
+
+        String pubId = testPublisher.getPubId();
+
+        publisherRepository.deleteById(pubId);
+
+        Optional<Publisher> optionalPublisher = publisherRepository.findById(pubId);
+
+        Assertions.assertTrue(optionalPublisher.isEmpty());
+    }
 }
