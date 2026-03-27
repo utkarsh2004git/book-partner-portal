@@ -25,7 +25,7 @@ public class Store {
     @Id
     @NotNull(message = "Store ID is required")
     @Size(min = 4, max = 4)
-    @Column(name = "stor_id", length = 4, columnDefinition = "char(4)")
+    @Column(name = "stor_id", length = 4, columnDefinition = "char(4)", updatable = false)
     private String storId;
 
     @Size(max = 40)
