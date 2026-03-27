@@ -16,6 +16,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 import com.capgemini.book_partner_portal.entity.Author;
 import com.capgemini.book_partner_portal.repository.AuthorRepository;
+import com.fasterxml.jackson.databind.ObjectMapper;
 
 import jakarta.transaction.Transactional;
 
@@ -24,9 +25,14 @@ import jakarta.transaction.Transactional;
 @AutoConfigureMockMvc
 @Transactional
 public class AuthorApiTest {
+
     
     @Autowired
     private MockMvc mockMvc;
+
+    @Autowired
+    private ObjectMapper objectMapper;
+
 
     @Autowired
     private AuthorRepository authorRepository;
@@ -35,17 +41,18 @@ public class AuthorApiTest {
 
     @BeforeEach
     void setup() {
-        testAuthor = new Author(
-            "123-45-6789", 
-            "Doe", 
-            "John", 
-            "415 658-9932", 
-            "6223 Bateman St.", 
-            "Berkeley", 
-            "CA", 
-            "94705", 
-            1
-        );
+        testAuthor = Author.builder()
+            .auId("123-45-6789")
+            .firstName("John")
+            .lastName("Doe")
+            .phone("415 658-9932")
+            .address("6223 Bateman St.")
+            .city("Berkeley")
+            .state("CA")
+            .zip("94705")
+            .contract(1)
+            .build();
+
 
         authorRepository.save(testAuthor);
     }
@@ -152,23 +159,22 @@ public class AuthorApiTest {
 
     @Test
     void createAuthor_WithValidData_ShouldReturn201() throws Exception {
-        String newAuthorJson = """
-            {
-                "auId": "987-65-4321",
-                "firstName": "Alice",
-                "lastName": "Smith",
-                "phone": "415 123-8585",
-                "address": "Street 1",
-                "city": "Oakland",
-                "state": "CA",
-                "zip": "94618",
-                "contract": 1
-            }
-        """;
+
+        Author newAuthorJson = Author.builder()
+            .auId("987-65-4321")
+            .firstName("Alice")
+            .lastName("Smith")
+            .phone("415 123-8585")
+            .address("Street 1")
+            .city("Oakland")
+            .state("CA")
+            .zip("94618")
+            .contract(1)
+            .build();
 
         mockMvc.perform(post("/api/authors")
                 .contentType("application/json")
-                .content(newAuthorJson))
+                .content(objectMapper.writeValueAsString(newAuthorJson)))
             .andDo(print())
             .andExpect(status().isCreated())
             .andExpect(jsonPath("$.firstName").value("Alice"))
@@ -177,15 +183,13 @@ public class AuthorApiTest {
 
     @Test
     void createAuthor_WithMissingFields_ShouldReturn400() throws Exception {
-        String json = """
-            {
-                "auId": "111-11-1111"
-            }
-        """;
+        Author newAuthorJson = Author.builder()
+                                .auId("111-11-1111")
+                                .build();
 
         mockMvc.perform(post("/api/authors")
                 .contentType("application/json")
-                .content(json))
+                .content(objectMapper.writeValueAsString(newAuthorJson)))
                 .andDo(print())
             .andExpect(status().isBadRequest());
     }
@@ -193,38 +197,37 @@ public class AuthorApiTest {
     // create author with invalid id format
     @Test
     void createAuthor_WithInvalidIdFormat_ShouldReturn400() throws Exception {
-        String json = """
-            {
-                "auId": "111111111",
-                "firstName": "John",
-                "lastName": "Doe",
-                "contract": 1
-            }
-        """;
+
+        Author newAuthorJson = Author.builder()
+                                .auId("111111111")
+                                .firstName("John")
+                                .lastName("Doe")
+                                .contract(1)
+                                .build();
 
         mockMvc.perform(post("/api/authors")
                 .contentType("application/json")
-                .content(json))
+                .content(objectMapper.writeValueAsString(newAuthorJson)))
                 .andDo(print())
             .andExpect(status().isBadRequest());
     }
 
     
-    // create author with null firstName and null lastName 
+    // create author with empty firstName and lastName 
     @Test
-    void createAuthor_WithNullFirstNameAndLastName_ShouldReturn400() throws Exception {
-        String json = """
-            {
-                "auId": "111111111",
-                "firstName": "",
-                "lastName": "",
-                "contract": 1
-            }
-        """;
+    void createAuthor_WithEmptyFirstNameAndLastName_ShouldReturn400() throws Exception {
+
+        
+        Author newAuthorJson = Author.builder()
+                                .auId("111111111")
+                                .firstName("")
+                                .lastName("")
+                                .contract(1)
+                                .build();
 
         mockMvc.perform(post("/api/authors")
                 .contentType("application/json")
-                .content(json))
+                .content(objectMapper.writeValueAsString(newAuthorJson)))
                 .andDo(print())
             .andExpect(status().isBadRequest());
     }
@@ -233,18 +236,16 @@ public class AuthorApiTest {
     // create author with Null contract
     @Test
     void createAuthor_WithNullContract_ShouldReturn400() throws Exception {
-        String json = """
-            {
-                "auId": "111-11-1111",
-                "firstName": "John",
-                "lastName": "Doe"
 
-            }
-        """;
+        Author newAuthorJson = Author.builder()
+                                .auId("111-11-1111")
+                                .firstName("John")
+                                .lastName("Doe")
+                                .build();
 
         mockMvc.perform(post("/api/authors")
                 .contentType("application/json")
-                .content(json))
+                .content(objectMapper.writeValueAsString(newAuthorJson)))
                 .andDo(print())
             .andExpect(status().isBadRequest());
     }
@@ -252,20 +253,36 @@ public class AuthorApiTest {
     // create author with invalid zip
     @Test
     void createAuthor_WithInvalidZipcode_ShouldReturn400() throws Exception {
-        String json = """
-            {
-                "auId": "111-11-1111",
-                "firstName": "John",
-                "lastName": "Doe",
-                "contract":1,
-                "zip":"999"
 
-            }
-        """;
+        Author newAuthorJson = Author.builder()
+                                .auId("111-11-1111")
+                                .firstName("John")
+                                .lastName("Doe")
+                                .contract(1)
+                                .zip("111")
+                                .build();
+        mockMvc.perform(post("/api/authors")
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(newAuthorJson)))
+                .andDo(print())
+            .andExpect(status().isBadRequest());
+    }
+
+    // create author with invalid state length
+    @Test
+    void createAuthor_WithInvalidStateLength_ShouldReturn400() throws Exception {
+
+        Author newAuthorJson = Author.builder()
+                                .auId("111-11-1111")
+                                .firstName("John")
+                                .lastName("Doe")
+                                .contract(1)
+                                .state("ABCD")
+                                .build();
 
         mockMvc.perform(post("/api/authors")
                 .contentType("application/json")
-                .content(json))
+                .content(objectMapper.writeValueAsString(newAuthorJson)))
                 .andDo(print())
             .andExpect(status().isBadRequest());
     }
@@ -273,31 +290,21 @@ public class AuthorApiTest {
 
 
     // create author with duplicate id
+    @Test
+    void createAuthor_WithDuplicateId_ShouldReturn409() throws Exception {
 
-    // @Test
-    // void createAuthor_WithDuplicateId_ShouldReturn409() throws Exception {
-    //     String json = """
-    //         {
-    //             "auId": "111-11-1111",
-    //             "firstName": "John",
-    //             "lastName": "Doe",
-    //             "contract": 1
-    //         }
-    //     """;
+        // Same ID as inserted in @BeforeEach
+        Author duplicateAuthor = Author.builder()
+                .auId("123-45-6789")
+                .firstName("John")
+                .lastName("Doe")
+                .contract(1)
+                .build();
 
-    //     // 1. Send the first request to create the author successfully
-    //     mockMvc.perform(post("/api/authors")
-    //             .contentType("application/json")
-    //             .content(json))
-    //             .andExpect(status().isCreated()); 
-
-
-    //     mockMvc.perform(post("/api/authors")
-    //             .contentType("application/json")
-    //             .content(json))
-    //             .andDo(print())
-    //             .andExpect(status().isConflict())
-    //             .andExpect(jsonPath("$.error").exists());
-                
-    // }
+        mockMvc.perform(post("/api/authors")
+                .contentType("application/json")
+                .content(objectMapper.writeValueAsString(duplicateAuthor)))
+                .andDo(print())
+                .andExpect(status().isConflict());
+    }
 }

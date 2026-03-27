@@ -9,6 +9,7 @@ import jakarta.validation.constraints.NotNull;
 import jakarta.validation.constraints.Pattern;
 import jakarta.validation.constraints.Size;
 import lombok.AllArgsConstructor;
+import lombok.Builder;
 import lombok.Getter;
 import lombok.NoArgsConstructor;
 import lombok.Setter;
@@ -19,8 +20,9 @@ import lombok.ToString;
 @Getter
 @Setter
 @NoArgsConstructor
-@AllArgsConstructor
 @ToString
+@Builder
+@AllArgsConstructor
 public class Author {
 
     @Id
@@ -37,7 +39,8 @@ public class Author {
     @NotBlank(message = "First name is required")
     private String firstName;
 
-    @Column(length = 12)
+    @Builder.Default
+    @Column(nullable = false, length = 12)
     private String phone = "UNKNOWN";
 
     private String address;
@@ -54,4 +57,10 @@ public class Author {
     @NotNull(message = "Contract is required")
     @Column(nullable = false)
     private Integer contract;
+
+    @Builder.Default
+    @Column(name = "is_active", nullable = false)
+    private Boolean isActive = true;
+
+
 }
