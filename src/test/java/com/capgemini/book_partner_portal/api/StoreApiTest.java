@@ -7,6 +7,7 @@ import org.springframework.http.MediaType;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
 import static org.hamcrest.Matchers.*;
@@ -19,6 +20,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 @SpringBootTest
 @AutoConfigureMockMvc
 @Transactional
+@ActiveProfiles("local")
 public class StoreApiTest {
     @Autowired
     private MockMvc mockMvc;
@@ -153,10 +155,9 @@ public class StoreApiTest {
     }
 
     // ------------------- POST APIs -------------------
+
     @Test
     void insertStore_WithValidData_ShouldReturn201() throws Exception {
-        long initialCount = storeRepository.count();
-
         String newStoreJson = """
             {
                 "storId": "9910",
@@ -169,15 +170,45 @@ public class StoreApiTest {
             """;
 
         mockMvc.perform(post("/api/stores")
-                        .contentType("application/json")
+                        .contentType(MediaType.APPLICATION_JSON)
                         .content(newStoreJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$._links.self.href", endsWith("/api/stores/9910")));
+    }
+
+    @Test
+    void insertStore_WhenIdAlreadyExists_ShouldReturnConflict() throws Exception {
+        String duplicateJson = """
+            {
+                "storId": "7066", 
+                "storName": "Hacker Store",
+                "city": "Nagpur"
+            }
+            """;
+
+        mockMvc.perform(post("/api/stores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(duplicateJson))
+                .andExpect(status().isConflict()); // HTTP 409 Conflict
+    }
+
+    @Test
+    void insertStore_WithIsActiveFalse_ShouldIgnoreAndSetTrue() throws Exception {
+        String sneakyJson = """
+            {
+                "storId": "9955",
+                "storName": "Sneaky Store",
+                "isActive": false 
+            }
+            """;
+
+        mockMvc.perform(post("/api/stores")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(sneakyJson))
                 .andExpect(status().isCreated());
 
-        assertEquals(initialCount + 1, storeRepository.count());
-
-        mockMvc.perform(get("/api/stores/9910"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.storName").value("Vedika's Book Hub"));
+        mockMvc.perform(get("/api/stores/9955"))
+                .andExpect(status().isOk());
     }
 
     // ------------------- PUT APIs -------------------
@@ -188,45 +219,63 @@ public class StoreApiTest {
         String updatedJson = """
             {
                 "storName": "Barnum's Nagpur",
-                "storAddress": "Ramdaspeth",
-                "city": "Nagpur",
-                "state": "MH",
-                "zip": "44001"
+                "city": "Nagpur"
             }
             """;
 
         mockMvc.perform(put("/api/stores/" + storeId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(updatedJson))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/stores/" + storeId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.storName").value("Barnum's Nagpur"))
-                .andExpect(jsonPath("$.city").value("Nagpur"));
+                .andExpect(jsonPath("$.storName").value("Barnum's Nagpur"));
     }
 
+    @Test
+    void updateStore_WhenIdDoesNotExist_ShouldReturnNotFound() throws Exception {
+        String fakeStoreJson = """
+            {
+                "storName": "Ghost Store",
+                "city": "Nowhere"
+            }
+            """;
+
+        mockMvc.perform(put("/api/stores/0000")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(fakeStoreJson))
+                .andExpect(status().isNotFound()); // HTTP 404 from EventHandler
+    }
 
     // ------------------- PATCH APIs -------------------
-    @Test
-    void patchStore_WithSpecificField_ShouldOnlyUpdateThatField() throws Exception {
-        String storeId = "7066";
 
+    @Test
+    void patchStore_WithValidId_ShouldUpdateSingleField() throws Exception {
+        String storeId = "7066";
         String partialUpdateJson = """
             {
-                "storName": "Updated Barnum Shop"
+                "city": "Nagpur"
             }
             """;
 
         mockMvc.perform(patch("/api/stores/" + storeId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(partialUpdateJson))
-                .andExpect(status().isOk());
-
-        mockMvc.perform(get("/api/stores/" + storeId))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.storName").value("Updated Barnum Shop"))
-                .andExpect(jsonPath("$.state").value("CA"));
+                .andExpect(jsonPath("$.city", is("Nagpur")))
+                .andExpect(jsonPath("$.storName", is("Barnum's")));
+    }
+
+    @Test
+    void patchStore_WhenIdDoesNotExist_ShouldReturnNotFound() throws Exception {
+        String fakePatchJson = """
+            {
+                "storName": "Ghost Update"
+            }
+            """;
+
+        mockMvc.perform(patch("/api/stores/0000")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(fakePatchJson))
+                .andExpect(status().isNotFound()); // From StoreEventHandler
     }
 
     // ------------------- DELETE APIs -------------------

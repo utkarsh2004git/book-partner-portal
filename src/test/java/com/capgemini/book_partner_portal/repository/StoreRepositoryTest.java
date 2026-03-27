@@ -1,125 +1,124 @@
 package com.capgemini.book_partner_portal.repository;
 
 import com.capgemini.book_partner_portal.entity.Store;
-import jakarta.transaction.Transactional;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabase;
+import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
+import org.springframework.test.context.ActiveProfiles;
 
 import java.util.List;
 import java.util.Optional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.assertj.core.api.Assertions.assertThat; // AssertJ for better readability
 
-@SpringBootTest
-@Transactional
+@DataJpaTest
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+@ActiveProfiles("local")
 public class StoreRepositoryTest {
+
     @Autowired
     private StoreRepository storeRepository;
 
-    // find all stores
-    @Test
-    void findAll_WhenStoresExist_ShouldReturnNonEmptyList(){
-        List<Store> stores = storeRepository.findAll();
-        assertFalse(stores.isEmpty());
+    @BeforeEach
+    public void setUp() {
+        storeRepository.save(new Store("9901", "Barnum's", "567 Pasadena", "Tustin", "CA", "92789", true));
+        storeRepository.save(new Store("9902", "Eric the Read", "123 Main", "Seattle", "WA", "98101", true));
+        storeRepository.save(new Store("9903", "Nagpur Books", "Civil Lines", "Nagpur", "MH", "44001", true));
     }
 
-    // find store with valid id
+    // --- READ Tests ---
+
+    @Test
+    void testFindAll_ShouldReturnSavedStores() {
+        List<Store> stores = storeRepository.findAll();
+        assertThat(stores).isNotEmpty();
+        // Kam se kam ek humara saved record check kar lete hain
+        assertThat(stores).anyMatch(s -> s.getStorId().equals("9901"));
+    }
+
     @Test
     public void testFindById_WithValidId_ShouldReturnStore() {
-        Optional<Store> store = storeRepository.findById("7066");
-        assertTrue(store.isPresent());
-        assertEquals("Barnum's", store.get().getStorName());
+        Optional<Store> store = storeRepository.findById("9901");
+        assertThat(store).isPresent();
+        assertThat(store.get().getStorName()).isEqualTo("Barnum's");
     }
 
-    // find store with invalid id
     @Test
     public void testFindById_WithInvalidId_ShouldReturnEmpty() {
         Optional<Store> store = storeRepository.findById("9999");
-        assertTrue(store.isEmpty());
+        assertThat(store).isEmpty();
     }
 
-    // find store with valid city
+    // --- SEARCH Tests ---
+
     @Test
-    public void testFindByCity_ShouldReturnSpecificStoreData() {
-        String city = "Seattle";
-        List<Store> results = storeRepository.findByCityIgnoreCase(city);
-
-        assertFalse(results.isEmpty());
-        assertTrue(results.stream().anyMatch(s -> s.getStorName().equals("Eric the Read Books")));
+    public void testFindByCity_WhenValid_ShouldReturnMatches() {
+        List<Store> results = storeRepository.findByCityIgnoreCase("seattle");
+        assertThat(results).isNotEmpty();
+        assertThat(results).allMatch(s -> s.getCity().equalsIgnoreCase("Seattle"));
     }
 
-    // find store with valid state
-    @Test
-    public void testFindByState_ShouldReturnStores() {
-        List<Store> results = storeRepository.findByStateIgnoreCase("CA");
-
-        assertFalse(results.isEmpty());
-        assertTrue(results.stream().allMatch(s -> s.getState().equalsIgnoreCase("CA")));
-    }
-
-    // find store with partial name match
-    @Test
-    public void testSearchByName_ShouldFindPartialMatch() {
-        List<Store> results = storeRepository.findByStorNameContainingIgnoreCase("Barnum");
-
-        assertFalse(results.isEmpty());
-        assertEquals("Barnum's", results.get(0).getStorName());
-    }
-
-    // find store when city not exists
     @Test
     public void testFindByCity_WhenCityNotExists_ShouldReturnEmptyList() {
         List<Store> results = storeRepository.findByCityIgnoreCase("Gondia");
-        assertTrue(results.isEmpty());
+        assertThat(results).isEmpty();
     }
 
-    // find store when state not exists
+    @Test
+    public void testFindByState_WhenValid_ShouldReturnStores() {
+        List<Store> results = storeRepository.findByStateIgnoreCase("CA");
+        assertThat(results).isNotEmpty();
+        assertThat(results).allMatch(s -> s.getState().equalsIgnoreCase("CA"));
+    }
+
     @Test
     public void testFindByState_WhenStateNotExists_ShouldReturnEmptyList() {
         List<Store> results = storeRepository.findByStateIgnoreCase("NY");
-        assertTrue(results.isEmpty());
+        assertThat(results).isEmpty();
     }
 
-
-    //---------POST,PUT test
-
-    // Test: Create/Insert Store
     @Test
-    void save_WhenValidStore_ShouldPersistInDb() {
-        Store newStore = new Store("9920", "Test Store", "123 Road", "Nagpur", "MH", "44001",true);
+    public void testSearchByName_ShouldFindPartialMatch() {
+        List<Store> results = storeRepository.findByStorNameContainingIgnoreCase("Barnum");
+        assertThat(results).isNotEmpty();
+        assertThat(results.get(0).getStorName()).contains("Barnum");
+    }
 
+    // --- CUD (Create, Update, Delete) Tests ---
+
+    @Test
+    void testSave_WhenValidStore_ShouldPersistInDb() {
+        Store newStore = new Store("9920", "Test Store", "123 Road", "Nagpur", "MH", "44001", true);
         storeRepository.save(newStore);
 
         Optional<Store> found = storeRepository.findById("9920");
-
-        assertTrue(found.isPresent());
-        if(found.isPresent()) {
-            assertEquals("Test Store", found.get().getStorName());
-        }
+        assertThat(found).isPresent();
+        assertThat(found.get().getStorName()).isEqualTo("Test Store");
     }
 
-    // Test: Update Store
     @Test
-    void save_WhenUpdateExistingStore_ShouldChangeData() {
-        Optional<Store> storeOpt = storeRepository.findById("7066");
-        Store store = storeOpt.get();
-
+    void testUpdate_ShouldChangeData() {
+        Store store = storeRepository.findById("9901").get();
         store.setStorName("Updated Name");
         storeRepository.save(store);
 
-        assertEquals("Updated Name", storeRepository.findById("7066").get().getStorName());
+        Optional<Store> updated = storeRepository.findById("9901");
+        assertThat(updated).isPresent();
+        assertThat(updated.get().getStorName()).isEqualTo("Updated Name");
     }
 
-    //Test: Delete Store
     @Test
-    void deleteStore_ShouldPerformSoftDelete_AndHideFromRepository() {
-        String idToDelete = "7066";
+    void testDeleteStore_ShouldPerformSoftDelete_AndHideFromRepository() {
+        String idToDelete = "9901";
+
+        // Before delete confirm it's there
+        assertThat(storeRepository.findById(idToDelete)).isPresent();
 
         storeRepository.deleteById(idToDelete);
 
         Optional<Store> deletedStore = storeRepository.findById(idToDelete);
-
-        assertFalse(deletedStore.isPresent());
+        assertThat(deletedStore).isEmpty();
     }
 }
