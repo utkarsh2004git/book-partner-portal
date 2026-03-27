@@ -87,7 +87,6 @@ public class StoreRepositoryTest {
     // Test: Create/Insert Store
     @Test
     void save_WhenValidStore_ShouldPersistInDb() {
-        // Constructor use karne ke liye AllArgsConstructor annotation zaruri hai
         Store newStore = new Store("9920", "Test Store", "123 Road", "Nagpur", "MH", "44001");
 
         storeRepository.save(newStore);
