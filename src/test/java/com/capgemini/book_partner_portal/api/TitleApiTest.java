@@ -19,10 +19,12 @@ import jakarta.transaction.Transactional;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.*;
 import static org.assertj.core.api.Assertions.assertThat;
@@ -61,7 +63,7 @@ class TitleApiTest {
         book.setPrice(19.99);
         book.setRoyalty(10);
         book.setPubdate(LocalDateTime.now());
-        book.setActive(true);
+        book.setIsActive(true);
         titleRepository.save(book);
     }
 
@@ -174,5 +176,62 @@ class TitleApiTest {
         // 2. Try to Get - Should be 404 because @Where(is_active=true) filters it out
         mockMvc.perform(get("/api/titles/" + id))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Security: Prevent Duplicate ID (409 Conflict)")
+    void testCreateDuplicateTitle_ShouldFail() throws Exception {
+        // "BU1332" already exists from @BeforeEach
+        String duplicateJson = "{" +
+                "\"titleId\": \"BU1332\"," +
+                "\"title\": \"Hacker Book\"," +
+                "\"publisher\": \"/api/publishers/1389\"," +
+                "\"active\": true" +
+                "}";
+
+        mockMvc.perform(post("/api/titles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(duplicateJson))
+                .andExpect(status().isConflict()); // Validates TitleEventHandler bouncer
+    }
+
+    @Test
+    @DisplayName("Security: Prevent Phantom Insert via PUT (404 Not Found)")
+    void testPutNewTitle_ShouldFail() throws Exception {
+        String nonExistentId = "NEW999";
+        String phantomJson = "{" +
+                "\"titleId\": \"" + nonExistentId + "\"," +
+                "\"title\": \"Phantom Book\"," +
+                "\"publisher\": \"/api/publishers/1389\"" +
+                "}";
+
+        mockMvc.perform(put("/api/titles/" + nonExistentId)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(phantomJson))
+                .andExpect(status().isNotFound()); 
+    }
+
+    @Test
+    @DisplayName("Security: POST with isActive=false should be ignored")
+    void insertTitle_WithIsActiveFalse_ShouldIgnoreAndSetTrue() throws Exception {
+        String id = "PC8888";
+        // Hacker tries to create a book that is already "deleted" (soft-delete hack)
+        String maliciousJson = "{" +
+                "\"titleId\": \"" + id + "\"," +
+                "\"title\": \"Hacker's Manual\"," +
+                "\"publisher\": \"/api/publishers/1389\"," +
+                "\"active\": false" + 
+                "}";
+    
+        mockMvc.perform(post("/api/titles")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(maliciousJson))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.title", is("Hacker's Manual")));
+    
+        // Verify in DB: The record must be active despite the hacker's JSON
+        Optional<Title> savedBook = titleRepository.findById(id);
+        assertThat(savedBook).isPresent();
+        assertThat(savedBook.get().getIsActive()).isTrue(); // The Shield Worked!
     }
 }
