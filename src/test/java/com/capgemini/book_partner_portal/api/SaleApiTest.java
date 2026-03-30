@@ -37,7 +37,6 @@ public class SaleApiTest {
 
     @BeforeEach
     void setUp() {
-        // Setting up a guaranteed test record so our GET tests always pass
         testSaleId = new SaleId("7131", "ORD-TEST-99", "BU1032");
         Sale testSale = new Sale(testSaleId, null, null, LocalDateTime.now(), (short) 5, "Net 30");
         saleRepository.save(testSale);
@@ -47,7 +46,6 @@ public class SaleApiTest {
 
     @Test
     void getSalesByStore_ShouldReturnSales_WithCalculatedLineTotal() throws Exception {
-        // Testing Dev 3's core endpoint for Page 3
         mockMvc.perform(get("/api/sales/search/byStore").param("storId", "7131"))
                 .andDo(print())
                 .andExpect(status().isOk())
@@ -56,8 +54,8 @@ public class SaleApiTest {
                 // 1. Check if the SpEL flattened the OrdNum properly (from SaleDetailProjection)
                 .andExpect(jsonPath("$._embedded.sales[0].ordNum").exists())
 
-                // 2. THE MAGIC: Check if the dynamic SpEL calculation exists
-                .andExpect(jsonPath("$._embedded.sales[0].lineTotal").isNumber());
+                // 2. Check if the dynamic SpEL calculation exists
+                .andExpect(jsonPath("$._embedded.sales[0].totalAmount").isNumber());
     }
 
     @Test

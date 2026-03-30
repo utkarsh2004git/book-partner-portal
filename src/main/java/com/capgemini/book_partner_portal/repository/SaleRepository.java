@@ -20,15 +20,6 @@ import java.util.List;
 )
 public interface SaleRepository extends JpaRepository<Sale, SaleId> {
 
-    /**
-     * For Dev 3's Page 3 (Store Details).
-     * Fetches every sale transaction associated with a specific Store ID.
-     *
-     * The "_" syntax tells Spring Data to look inside the @EmbeddedId composite key
-     * and filter by the 'storId' field.
-     *
-     * Endpoint: GET /api/sales/search/byStore?storId=7131
-     */
     @RestResource(path = "byStore", rel = "by-store")
     List<Sale> findById_StorId(@Param("storId") String storId);
 }

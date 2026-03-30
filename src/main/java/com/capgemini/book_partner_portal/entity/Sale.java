@@ -18,18 +18,6 @@ import lombok.ToString;
 
 import java.time.LocalDateTime;
 
-/**
- * Entity for the 'sales' table. Dev 3 Owns this.
- *
- * ARCHITECTURAL RULES ENFORCED:
- * 1. NO SOFT DELETES:
- * The DB schema dictates financial transactions are immutable. There is no
- * is_active column, so no @SQLDelete or @SQLRestriction is applied.
- * * 2. DOUBLE SHIELD PATTERN:
- * - Shield 1 protects Dev 3's own Store entity from cascading accidental updates.
- * - Shield 2 protects Dev 1's Title entity. Dev 3 ONLY uses this link to fetch
- * the book's price for the "Line Total" calculator in the JSON projection.
- */
 @Entity
 @Table(name = "sales")
 @Getter

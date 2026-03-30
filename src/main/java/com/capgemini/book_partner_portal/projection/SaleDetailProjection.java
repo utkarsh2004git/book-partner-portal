@@ -12,9 +12,7 @@ import java.time.LocalDateTime;
 @Projection(name = "saleDetail", types = {Sale.class})
 public interface SaleDetailProjection {
 
-    // 1. Flatten the Composite Key:
-    // The frontend doesn't want to parse a nested 'id' object just to show
-    // the Order Number. This SpEL trick extracts it directly to the top level.
+    // Extracts 'ordNum' from the composite key for a flatter JSON response.
     @Value("#{target.id.ordNum}")
     String getOrdNum();
 
@@ -22,9 +20,7 @@ public interface SaleDetailProjection {
     Short getQty();
     String getPayterms();
 
-    // 2. The Firewall to Dev 1's Data:
-    // Dev 3 needs the book's title and price, but absolutely nothing else.
-    // This nested view prevents Dev 1's internal fields from leaking here.
+    // Restricts exposed Title data to just 'title' and 'price'.
     TitleView getTitle();
 
     interface TitleView {
@@ -32,9 +28,7 @@ public interface SaleDetailProjection {
         Double getPrice();
     }
 
-    // 3. THE MAGIC: Dynamic Line Total Calculation
-    // Multiplies the sale quantity by the associated book's price in real-time.
-    // Null-safe checks prevent 500 errors if a book was physically deleted.
+    // Calculates total revenue (qty * price) on the fly, safely handling nulls.
     @Value("#{target.qty * (target.title != null && target.title.price != null ? target.title.price : 0.0)}")
     Double getTotalAmount();
 }

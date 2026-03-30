@@ -16,6 +16,7 @@ import org.hibernate.annotations.Where;
 import java.util.List;
 
 @Entity
+// Explicitly binds this class to the 'stores' database table
 @Table(name = "stores") // Matches the DB table name
 @Data
 @SQLDelete(sql = "UPDATE stores SET is_active = false WHERE stor_id = ?")
@@ -24,6 +25,11 @@ import java.util.List;
 @AllArgsConstructor
 public class Store {
 
+    /**
+     * The Primary Key for the Store.
+     * updatable = false ensures that once a store is created, its ID can NEVER be changed,
+     * protecting historical data integrity.
+     */
     @Id
     @NotNull(message = "Store ID is required")
     @Size(min = 4, max = 4,message = "Store ID must be exactly 4 characters")
@@ -42,14 +48,25 @@ public class Store {
     @Size(max = 20, message = "City must not exceed 20 characters")
     private String city;
 
+    // Fixed to 2 characters for standard US State abbreviations (e.g., "CA", "MH")
     @Size(max = 2)
     @Column(name = "state", length = 2, columnDefinition = "char(2)")
     private String state;
 
+    /**
+     * Validates that the zip code is exactly 5 numerical digits before it ever
+     * reaches the database, preventing formatting errors.
+     */
     @Column(name = "zip", columnDefinition = "CHAR(5)")
     @Pattern(regexp = "^[0-9]{5}$", message = "Zip code must be exactly 5 digits")
     private String zip;
 
+    /**
+     * The Soft Delete flag.
+     * @JsonIgnore is CRITICAL here. It hides this database-specific column from the
+     * REST API's JSON response, ensuring API consumers don't accidentally view or
+     * manipulate our internal security flags.
+     */
     @JsonIgnore
     @Column(name = "is_active", nullable = false)
     private Boolean isActive = true;

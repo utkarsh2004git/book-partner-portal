@@ -9,7 +9,7 @@ import java.io.Serializable;
 
 /**
  * Translator for Sale Composite Key.
- * This teaches Spring Data REST how to read and write comma-separated URLs
+ * This tells Spring Data REST how to read and write comma-separated URLs
  * (e.g., /api/sales/7131,ORD123,BU1032) into the SaleId Java object.
  */
 @Component

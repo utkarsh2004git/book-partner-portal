@@ -11,9 +11,18 @@ import java.io.Serializable;
 @Setter
 @NoArgsConstructor
 @AllArgsConstructor
+/*
+ * CRITICAL LOMBOK ANNOTATION:
+ * Hibernate requires @EqualsAndHashCode for all Composite Keys. Without this,
+ * Hibernate compares the memory addresses of two SaleId objects instead of their
+ * actual data, which causes database lookups to fail and throws severe caching errors.
+ */
 @EqualsAndHashCode
 @ToString
 public class SaleId implements Serializable {
+
+    // Must implement Serializable so Java can convert this object into a byte stream
+    // to travel across memory networks to the database.
 
     @Column(name = "stor_id", length = 4, nullable = false)
     private String storId;
