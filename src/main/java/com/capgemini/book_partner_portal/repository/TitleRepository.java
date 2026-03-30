@@ -4,6 +4,8 @@ import com.capgemini.book_partner_portal.entity.Title;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
+import org.springframework.data.rest.core.annotation.RestResource;
+
 import java.util.List;
 import java.util.Optional;
 
@@ -12,7 +14,7 @@ public interface TitleRepository extends JpaRepository<Title, String> {
 
     // --- Title Name Searches ---
     Optional<Title> findByTitle(@Param("title") String title);
-    
+
     List<Title> findByTitleContainingIgnoreCase(@Param("title") String title);
 
     // --- Type/Genre Searches ---
@@ -20,10 +22,13 @@ public interface TitleRepository extends JpaRepository<Title, String> {
 
     // --- Price Comparison Searches (Matching Employee Job Level logic) ---
     List<Title> findByPrice(@Param("price") Double price);
-    
+
     List<Title> findByPriceGreaterThan(@Param("price") Double price);
-    
+
     List<Title> findByPriceLessThan(@Param("price") Double price);
-    
+
     List<Title> findByPriceBetween(@Param("min") Double min, @Param("max") Double max);
+
+    @RestResource(path = "publisher", rel = "by-publisher")
+    List<Title> findByPublisherPubId(@Param("pubId") String pubId);
 }
