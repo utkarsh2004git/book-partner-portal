@@ -15,6 +15,7 @@ import org.springframework.boot.test.autoconfigure.jdbc.AutoConfigureTestDatabas
 import org.springframework.boot.test.autoconfigure.orm.jpa.DataJpaTest;
 
 import com.capgemini.book_partner_portal.entity.Author;
+import com.capgemini.book_partner_portal.entity.TitleAuthor;
 
 import jakarta.transaction.Transactional;
 import jakarta.validation.ConstraintViolationException;
@@ -26,6 +27,9 @@ public class AuthorRepositoryTest {
 
     @Autowired
     private AuthorRepository authorRepository;
+
+    @Autowired 
+    private TitleAuthorRepository titleAuthorRepository;
 
     private Author testAuthor;
 
@@ -245,4 +249,94 @@ public class AuthorRepositoryTest {
     }
 
 
+
+
+
+
+    @Test 
+    void findTitlesByAuthor_ShouldReturnTitlesOfAuthor() {
+        // Already in database
+        String auId = "267-41-2394"; 
+        
+        // Act
+        List<TitleAuthor> titles = titleAuthorRepository.findById_AuId(auId);
+        
+        // Assert
+        assertThat(titles).isNotEmpty();
+        
+        // Advanced Mapping Check: Prove every record returned matches the requested auId
+        assertThat(titles).allSatisfy(ta -> {
+            assertThat(ta.getId().getAuId()).isEqualTo(auId);
+            assertThat(ta.getRoyaltyPer()).isNotNull();
+        });
+        
+    }
+
+
+    // ---------------------------------- Update & Patch Tests ----------------------------------------------
+
+    @Test
+    void updateAuthor_WithValidData_ShouldUpdateAllFields() {
+        // 1. Fetch the test author saved in @BeforeEach
+        Author existingAuthor = authorRepository.findById("123-45-6789").get();
+        
+        // 2. Modify fields (Update)
+        existingAuthor.setFirstName("Jane");
+        existingAuthor.setLastName("Smith");
+        existingAuthor.setCity("Oakland");
+        
+        // 3. Save
+        Author updated = authorRepository.saveAndFlush(existingAuthor);
+        
+        // 4. Assert
+        assertEquals("Jane", updated.getFirstName());
+        assertEquals("Oakland", updated.getCity());
+        // Verify auId didn't change (Immutable PK check)
+        assertEquals("123-45-6789", updated.getAuId());
+    }
+
+    @Test
+    void patchAuthor_WithPartialData_ShouldOnlyUpdateSpecificField() {
+        // 1. Fetch
+        Author existingAuthor = authorRepository.findById("123-45-6789").get();
+        String originalLastName = existingAuthor.getLastName();
+        
+        // 2. Modify only one field (Patch simulation)
+        existingAuthor.setFirstName("UpdatedName");
+        
+        // 3. Save
+        authorRepository.saveAndFlush(existingAuthor);
+        
+        // 4. Verify from DB
+        Author fromDb = authorRepository.findById("123-45-6789").get();
+        assertEquals("UpdatedName", fromDb.getFirstName());
+        assertEquals(originalLastName, fromDb.getLastName()); // Should remain "Doe"
+    }
+
+    @Test
+    void updateAuthor_WithInvalidZip_ShouldThrowException() {
+        // 1. Fetch
+        Author existingAuthor = authorRepository.findById("123-45-6789").get();
+        
+        // 2. Set invalid data (Violates @Pattern or @Size in Entity)
+        existingAuthor.setZip("ABC"); 
+        
+        // 3. Assert that saveAndFlush triggers validation
+        assertThrows(ConstraintViolationException.class, () -> {
+            authorRepository.saveAndFlush(existingAuthor);
+        });
+    }
+
+    // ---------------------------------- Soft Delete / Delete Tests ----------------------------------------------
+
+    @Test
+    void deleteAuthor_ShouldRemoveFromRepository() {
+        // Act
+        authorRepository.deleteById("123-45-6789");
+        authorRepository.flush();
+        
+        // Assert
+        Optional<Author> result = authorRepository.findById("123-45-6789");
+        assertTrue(result.isEmpty());
+    }
 }
