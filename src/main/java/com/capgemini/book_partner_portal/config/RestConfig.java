@@ -17,6 +17,7 @@ public class RestConfig implements RepositoryRestConfigurer {
             .addProjection(BookAuthorsProjection.class)
                 .addProjection(EmployeeDetailProjection.class)
                 .addProjection(SaleDetailProjection.class)
-                .addProjection(StoreSummaryProjection.class);
+                .addProjection(StoreSummaryProjection.class)
+                .addProjection(TitleSummaryProjection.class);
     }
 }
