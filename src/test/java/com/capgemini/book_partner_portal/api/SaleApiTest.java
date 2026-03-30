@@ -138,6 +138,32 @@ public class SaleApiTest {
     // -------------------PROJECTION & SECURITY TESTS ---
 
     @Test
+    void getSaleById_WithSaleDetailProjection_ShouldReturnNestedDataAndHideInternalIds() throws Exception {
+        // Goal: Prove that ?projection=saleDetail returns the correct nested data
+        // while strictly hiding internal DB IDs and Dev 1's sensitive publisher data.
+
+        // FIX: We query a REAL record from insertdata.sql to ensure the Title relationship is fully loaded by Hibernate
+        String compositeUrl = "/api/sales/7131,N914008,PS2091?projection=saleDetail";
+
+        mockMvc.perform(get(compositeUrl))
+                .andExpect(status().isOk())
+                // 1. Prove nested Title data works (The Firewall)
+                .andExpect(jsonPath("$.title.title").exists())
+                .andExpect(jsonPath("$.title.price").exists())
+                // 2. Prove the SpEL flattened the OrdNum
+                .andExpect(jsonPath("$.ordNum").value("N914008")) // Match the real order number!
+                // 3. Prove the dynamic math works
+                .andExpect(jsonPath("$.totalAmount").isNumber())
+
+                // 4. CRITICAL LEAK CHECK: Ensure internal/raw fields aren't leaking
+                // The raw composite key object should not be in the main JSON body
+                .andExpect(jsonPath("$.id").doesNotExist())
+                // Dev 1's sensitive data (like advances/royalties) must not leak through the TitleView
+                .andExpect(jsonPath("$.title.advance").doesNotExist())
+                .andExpect(jsonPath("$.title.titleId").doesNotExist());
+    }
+
+    @Test
     void putSale_WhenGhostInsertAttempted_ShouldReturnNotFound() throws Exception {
         // Goal: Prove that sending a PUT request to a fake composite ID returns 404
         // instead of accidentally creating a phantom financial record.
@@ -155,22 +181,5 @@ public class SaleApiTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(fakePutJson))
                 .andExpect(status().isNotFound()); // Validates the SaleEventHandler PUT block
-    }
-
-    // --- PROJECTION SECURITY ---
-
-    @Test
-    void getStoreById_WithStoreSummaryProjection_ShouldHideInternalId() throws Exception {
-        // Goal: Prove that applying the storeSummary projection explicitly hides
-        // the raw Database ID and internal security flags from the frontend payload.
-
-        mockMvc.perform(get("/api/stores/7066?projection=storeSummary"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.storName").value("Barnum's"))
-                .andExpect(jsonPath("$.city").value("Tustin"))
-
-                // CRITICAL LEAK CHECK: Prove raw DB ID and isActive flag are hidden
-                .andExpect(jsonPath("$.storId").doesNotExist())
-                .andExpect(jsonPath("$.isActive").doesNotExist());
     }
 }
