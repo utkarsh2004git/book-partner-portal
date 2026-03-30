@@ -134,4 +134,52 @@ public class SaleApiTest {
                         .content(fakeUpdateJson))
                 .andExpect(status().isNotFound()); // HTTP 404 from SaleEventHandler
     }
+
+    // -------------------PROJECTION & SECURITY TESTS ---
+
+    @Test
+    void getSaleById_WithSaleDetailProjection_ShouldReturnNestedDataAndHideInternalIds() throws Exception {
+        // Goal: Prove that ?projection=saleDetail returns the correct nested data
+        // while strictly hiding internal DB IDs and Dev 1's sensitive publisher data.
+
+        // FIX: We query a REAL record from insertdata.sql to ensure the Title relationship is fully loaded by Hibernate
+        String compositeUrl = "/api/sales/7131,N914008,PS2091?projection=saleDetail";
+
+        mockMvc.perform(get(compositeUrl))
+                .andExpect(status().isOk())
+                // 1. Prove nested Title data works (The Firewall)
+                .andExpect(jsonPath("$.title.title").exists())
+                .andExpect(jsonPath("$.title.price").exists())
+                // 2. Prove the SpEL flattened the OrdNum
+                .andExpect(jsonPath("$.ordNum").value("N914008")) // Match the real order number!
+                // 3. Prove the dynamic math works
+                .andExpect(jsonPath("$.totalAmount").isNumber())
+
+                // 4. CRITICAL LEAK CHECK: Ensure internal/raw fields aren't leaking
+                // The raw composite key object should not be in the main JSON body
+                .andExpect(jsonPath("$.id").doesNotExist())
+                // Dev 1's sensitive data (like advances/royalties) must not leak through the TitleView
+                .andExpect(jsonPath("$.title.advance").doesNotExist())
+                .andExpect(jsonPath("$.title.titleId").doesNotExist());
+    }
+
+    @Test
+    void putSale_WhenGhostInsertAttempted_ShouldReturnNotFound() throws Exception {
+        // Goal: Prove that sending a PUT request to a fake composite ID returns 404
+        // instead of accidentally creating a phantom financial record.
+        String ghostCompositeUrl = "/api/sales/9999,GHOST-ORD,BU1032";
+
+        String fakePutJson = """
+            {
+                "ordDate": "2024-01-01T10:00:00",
+                "qty": 500,
+                "payterms": "Net 30"
+            }
+            """;
+
+        mockMvc.perform(put(ghostCompositeUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(fakePutJson))
+                .andExpect(status().isNotFound()); // Validates the SaleEventHandler PUT block
+    }
 }
