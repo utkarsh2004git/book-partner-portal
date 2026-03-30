@@ -72,6 +72,7 @@ public class PublisherApiTest {
         testTitle.setRoyalty(10);
         testTitle.setPubdate(LocalDateTime.now());
         testTitle.setIsActive(true);
+        testTitle.setPubId(testPublisher.getPubId());
         titleRepository.save(testTitle);
     }
 
@@ -381,7 +382,9 @@ public class PublisherApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.pubName").exists())
                 .andExpect(jsonPath("$.active").doesNotExist()) // Verify it's hidden
-                .andExpect(jsonPath("$.isActive").doesNotExist());
+                .andExpect(jsonPath("$.isActive").doesNotExist())
+                .andDo(print())
+        ;
     }
 
     @Test
@@ -391,18 +394,17 @@ public class PublisherApiTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$._embedded.titles").exists())
                 .andExpect(jsonPath("$._embedded.titles.length()").value(1))
-                .andExpect(jsonPath("$._embedded.titles[*]._embedded.publisher.pubName").value(testPublisher.getPubName()))
+                .andExpect(jsonPath("$._embedded.titles[*].publisherName").value(testPublisher.getPubName()))
                 .andDo(print());
     }
 
     @Test
-    void shouldReturnAllEmptyTitlesByPublisherId() {
+    void shouldReturnAllEmptyTitlesByPublisherId() throws Exception {
 
-        String pubId = "9910"; // random
-
-        List<Title> titles = titleRepository.findByPublisherPubId(pubId);
-
-        Assertions.assertNotNull(titles);
-        Assertions.assertEquals(0, titles.size());
+        mockMvc.perform(get("/api/titles/search/publisher").param("pubId", "random"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$._embedded.titles").exists())
+                .andExpect(jsonPath("$._embedded.titles.length()").value(0))
+                .andDo(print());
     }
 }

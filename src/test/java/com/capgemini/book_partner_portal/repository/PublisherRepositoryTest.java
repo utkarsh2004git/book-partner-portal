@@ -57,6 +57,7 @@ public class PublisherRepositoryTest {
         testTitle.setRoyalty(10);
         testTitle.setPubdate(LocalDateTime.now());
         testTitle.setIsActive(true);
+        testTitle.setPubId(testPublisher.getPubId());
         titleRepository.save(testTitle);
     }
 
@@ -402,7 +403,7 @@ public class PublisherRepositoryTest {
 
         String pubId = testPublisher.getPubId();
 
-        List<Title> titles = titleRepository.findByPublisherPubId(pubId);
+        List<Title> titles = titleRepository.findByPubId(pubId);
 
         Assertions.assertNotNull(titles);
         Assertions.assertEquals(1, titles.size());
@@ -414,7 +415,7 @@ public class PublisherRepositoryTest {
 
         String pubId = "9910"; // random
 
-        List<Title> titles = titleRepository.findByPublisherPubId(pubId);
+        List<Title> titles = titleRepository.findByPubId(pubId);
 
         Assertions.assertNotNull(titles);
         Assertions.assertEquals(0, titles.size());
