@@ -134,4 +134,43 @@ public class SaleApiTest {
                         .content(fakeUpdateJson))
                 .andExpect(status().isNotFound()); // HTTP 404 from SaleEventHandler
     }
+
+    // -------------------PROJECTION & SECURITY TESTS ---
+
+    @Test
+    void putSale_WhenGhostInsertAttempted_ShouldReturnNotFound() throws Exception {
+        // Goal: Prove that sending a PUT request to a fake composite ID returns 404
+        // instead of accidentally creating a phantom financial record.
+        String ghostCompositeUrl = "/api/sales/9999,GHOST-ORD,BU1032";
+
+        String fakePutJson = """
+            {
+                "ordDate": "2024-01-01T10:00:00",
+                "qty": 500,
+                "payterms": "Net 30"
+            }
+            """;
+
+        mockMvc.perform(put(ghostCompositeUrl)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(fakePutJson))
+                .andExpect(status().isNotFound()); // Validates the SaleEventHandler PUT block
+    }
+
+    // --- PROJECTION SECURITY ---
+
+    @Test
+    void getStoreById_WithStoreSummaryProjection_ShouldHideInternalId() throws Exception {
+        // Goal: Prove that applying the storeSummary projection explicitly hides
+        // the raw Database ID and internal security flags from the frontend payload.
+
+        mockMvc.perform(get("/api/stores/7066?projection=storeSummary"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.storName").value("Barnum's"))
+                .andExpect(jsonPath("$.city").value("Tustin"))
+
+                // CRITICAL LEAK CHECK: Prove raw DB ID and isActive flag are hidden
+                .andExpect(jsonPath("$.storId").doesNotExist())
+                .andExpect(jsonPath("$.isActive").doesNotExist());
+    }
 }
