@@ -406,7 +406,7 @@ public class PublisherRepositoryTest {
         Page<Title> titles = titleRepository.findByPubId(pubId,PageRequest.of(0,5));
 
         Assertions.assertNotNull(titles);
-        Assertions.assertEquals(1, titles.getSize());
+        Assertions.assertEquals(1, titles.getNumberOfElements());
         Assertions.assertEquals(testPublisher.getPubId(), titles.getContent().get(0).getPublisher().getPubId());
     }
 
@@ -418,6 +418,6 @@ public class PublisherRepositoryTest {
         Page<Title> titles = titleRepository.findByPubId(pubId,PageRequest.of(0,5));
 
         Assertions.assertNotNull(titles);
-        Assertions.assertEquals(0, titles.getSize());
+        Assertions.assertEquals(0, titles.getNumberOfElements());
     }
 }
