@@ -2,7 +2,10 @@ package com.capgemini.book_partner_portal.repository;
 
 import com.capgemini.book_partner_portal.entity.Employee;
 import com.capgemini.book_partner_portal.projection.EmployeeSummaryProjection;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.data.rest.core.annotation.RepositoryRestResource;
 import org.springframework.data.rest.core.annotation.RestResource;
@@ -41,4 +44,12 @@ public interface EmployeeRepository extends JpaRepository<Employee, String> {
     // Cross-Module Support (Verified clean by Claude)
     @RestResource(path = "publisher", rel = "by-publisher")
     List<Employee> findByPubId(@Param("pubId") String pubId);
+
+
+    @RestResource(path = "advanced", rel = "advanced-search")
+    @Query("SELECT e FROM Employee e WHERE " +
+            "(:fname IS NULL OR LOWER(e.fname) LIKE LOWER(CONCAT('%', :fname, '%'))) AND " +
+            "(:lname IS NULL OR LOWER(e.lname) LIKE LOWER(CONCAT('%', :lname, '%'))) AND " +
+            "(:jobLvl IS NULL OR e.jobLvl = :jobLvl)")
+    Page<Employee> advancedSearch(@Param("fname") String fname, @Param("lname") String lname, @Param("jobLvl") Integer jobLvl, Pageable pageable);
 }
