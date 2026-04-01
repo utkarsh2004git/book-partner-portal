@@ -87,7 +87,7 @@ public class AuthorRepositoryTest {
     @Test
     void findByFirstName_WhenFirstNameNotExists_ShouldReturnEmptyList(){
         Page<Author> authors = authorRepository
-        .findByFirstNameContainingIgnoreCase("Ramesh",Pageable.unpaged());
+        .findByFirstNameContainingIgnoreCase("random",Pageable.unpaged());
         assertThat(authors).isEmpty();
     }
 
@@ -118,7 +118,7 @@ public class AuthorRepositoryTest {
     // find author when city not exists
     @Test 
     void findByCity_WhenCityNotExists_ShouldReturnEmptyList(){
-        Page<Author> authors = authorRepository.findByCityStartingWithIgnoreCase("Gondia",Pageable.unpaged());
+        Page<Author> authors = authorRepository.findByCityStartingWithIgnoreCase("random",Pageable.unpaged());
         assertThat(authors).isEmpty();
     }
 
@@ -133,7 +133,7 @@ public class AuthorRepositoryTest {
     //find author when state not exists
     @Test 
     void findByState_WhenStateNotExists_ShouldReturnEmptyList(){
-        Page<Author> authors = authorRepository.findByStateStartingWithIgnoreCase("Maharashtra",Pageable.unpaged());
+        Page<Author> authors = authorRepository.findByStateStartingWithIgnoreCase("xx",Pageable.unpaged());
         assertThat(authors).isEmpty();
     }
 
